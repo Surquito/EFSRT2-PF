@@ -7,3 +7,4 @@ Esta será una aplicación de escritorio desarrollada en **Python** diseñada pa
 ## Autores
 Gerson Ronaldo Surco Alata - www.linkedin.com/in/gerson-surco-alata-53b42026a
 Rocio del Pilar Apaza Machicao
+Aldair Anthony Valdez Rosas
