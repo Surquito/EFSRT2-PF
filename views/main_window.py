@@ -42,7 +42,7 @@ class MainWindow:
 
         # ✅ HOME (pantalla inicial)
         tab_home = ttk.Frame(notebook)
-        notebook.add(tab_home, text="🏠 Home")
+        notebook.add(tab_home, text="Inicio")
 
         # ==========================================
         # REEMPLAZO DE CONTENIDO HOME CON IMAGEN
@@ -84,7 +84,7 @@ class MainWindow:
         # ==========================================
         # ✅ Otras pestañas
         # ==========================================
-        notebook.add(EmployeeView(notebook), text="🧑 Employee")
+        notebook.add(EmployeeView(notebook), text="Empleado")
         # notebook.add(EvaluacionView(notebook), text="📊 Evaluación")
 
         # ✅ Mostrar HOME al iniciar
