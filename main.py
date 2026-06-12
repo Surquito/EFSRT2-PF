@@ -9,4 +9,5 @@ if __name__ == "__main__":
     # Iniciar la interfaz gráfica
     root = tk.Tk()
     app = MainWindow(root)
+    
     root.mainloop()
