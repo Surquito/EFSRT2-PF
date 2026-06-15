@@ -4,6 +4,8 @@ from PIL import Image, ImageTk
 import os
 from views.employee_window import EmployeeView
 from views.upload_window import EvaluationUploadView
+from views.evaluation_window import EvaluationView
+
 
 class MainWindow:
     def __init__(self, root):
@@ -64,4 +66,5 @@ class MainWindow:
 
         notebook.add(EmployeeView(notebook), text="Empleados")
         notebook.add(EvaluationUploadView(notebook), text="Carga de Evaluaciones")
+        notebook.add(EvaluationView(notebook), text="Evaluación")
         notebook.select(tab_home)
