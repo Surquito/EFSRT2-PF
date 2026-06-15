@@ -1,162 +1,455 @@
 # views/upload_window.py
+
 import tkinter as tk
+
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
+
 import os
-import time
-from datetime import datetime
+
+from services.etl_service import process_excel
+from database.connection import get_connection
+
 
 class EvaluationUploadView(ttk.Frame):
+
     def __init__(self, parent):
-        # Initialize as a standard ttk.Frame integrated into the Notebook
+
         super().__init__(parent)
-        
-        # Variable to store the selected file path
+
+        # ==================================
+        # VARIABLES
+        # ==================================
         self.selected_file_path = tk.StringVar()
-        
+
         self.create_widgets()
-        
+
+        # ==================================
+        # CARGAR HISTORIAL
+        # ==================================
+        self.load_history()
+
+    # ==================================
+    # UI
+    # ==================================
     def create_widgets(self):
-        # Main layout container with margin padding
-        main_container = ttk.Frame(self, padding="30 30 30 30")
-        main_container.pack(fill=tk.BOTH, expand=True)
-        
-        # Header Section
-        header_label = ttk.Label(
-            main_container, 
-            text="Carga Masiva de Evaluaciones (Proceso ETL)", 
-            font=("Arial", 16, "bold"),
-            foreground="#0f172a"
+
+        main_container = ttk.Frame(
+            self,
+            padding="30 30 30 30"
         )
-        header_label.pack(anchor=tk.W, pady=(0, 10))
-        
-        # Technical description according to project rules
+
+        main_container.pack(
+            fill=tk.BOTH,
+            expand=True
+        )
+
+        # ==================================
+        # DESCRIPCIÓN
+        # ==================================
         instruction_text = (
-            "Módulo de ingesta de datos para el procesamiento y normalización de archivos de "
-            "evaluación (.xlsx). El sistema procesará las 20 preguntas distribuidas en los bloques de "
-            "Calidad, Operatividad, Habilidades Blandas y Productividad para calcular el rendimiento final."
+            "Módulo de ingesta de datos para el "
+            "procesamiento y normalización de "
+            "archivos de evaluación (.xlsx)."
         )
+
         instruction_label = ttk.Label(
-            main_container, 
-            text=instruction_text, 
-            wraplength=800, 
+            main_container,
+            text=instruction_text,
+            wraplength=800,
             justify=tk.LEFT,
             font=("Arial", 10),
             foreground="#475569"
         )
-        instruction_label.pack(anchor=tk.W, pady=(0, 30))
-        
-        # File Browser Area (Card-like layout)
-        file_frame = ttk.LabelFrame(main_container, text=" Selección del Dataset ", padding="20 20 20 20")
-        file_frame.pack(fill=tk.X, pady=(0, 25))
-        
-        # Path Display Entry
+
+        instruction_label.pack(
+            anchor=tk.W,
+            pady=(0, 30)
+        )
+
+        # ==================================
+        # FILE FRAME
+        # ==================================
+        file_frame = ttk.LabelFrame(
+            main_container,
+            text=" Selección de archivo ",
+            padding="20 20 20 20"
+        )
+
+        file_frame.pack(
+            fill=tk.X,
+            pady=(0, 25)
+        )
+
+        # ==================================
+        # INPUT PATH
+        # ==================================
         self.entry_path = ttk.Entry(
-            file_frame, 
-            textvariable=self.selected_file_path, 
-            width=70, 
+            file_frame,
+            textvariable=self.selected_file_path,
+            width=70,
             state="disabled"
         )
-        self.entry_path.pack(side=tk.LEFT, padx=(0, 15), ipady=4)
-        
-        # Browse Button
+
+        self.entry_path.pack(
+            side=tk.LEFT,
+            padx=(0, 15),
+            ipady=4
+        )
+
+        # ==================================
+        # BOTÓN BUSCAR
+        # ==================================
         self.btn_browse = ttk.Button(
-            file_frame, 
-            text="Buscar Archivo...", 
+            file_frame,
+            text="Buscar Archivo...",
             command=self.browse_file
         )
-        self.btn_browse.pack(side=tk.LEFT, ipady=2)
-        
-        # Execution & Progress Area
-        process_frame = ttk.Frame(main_container)
-        process_frame.pack(fill=tk.X, pady=(0, 20))
-        
-        self.progress_bar = ttk.Progressbar(process_frame, mode="determinate")
-        self.progress_bar.pack(fill=tk.X, pady=(0, 20))
-        
-        # Action Buttons
-        self.btn_upload = ttk.Button(
-            process_frame, 
-            text="Procesar y Cargar a Supabase", 
-            state="disabled", 
-            command=self.process_and_upload_mock
+
+        self.btn_browse.pack(
+            side=tk.LEFT,
+            ipady=2
         )
-        self.btn_upload.pack(anchor=tk.E, ipady=4, ipadx=10)
 
-        # --- HISTORICAL TABLE SECTION ---
-        table_frame = ttk.LabelFrame(main_container, text=" Historial de Archivos Procesados ", padding="10")
-        table_frame.pack(fill=tk.BOTH, expand=True, pady=(5, 0))
-        
-        # Definition of columns for the Treeview standard (English naming convention)
-        columns = ("file_name", "upload_date", "status")
-        
-        self.history_tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=5)
-        self.history_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        
-        # Configure headers with clear naming
-        self.history_tree.heading("file_name", text="Nombre del Archivo")
-        self.history_tree.heading("upload_date", text="Fecha y Hora de Subida")
-        self.history_tree.heading("status", text="Estado del Proceso")
-        
-        # Configure columns widths and alignments
-        self.history_tree.column("file_name", width=400, anchor=tk.W)
-        self.history_tree.column("upload_date", width=200, anchor=tk.CENTER)
-        self.history_tree.column("status", width=150, anchor=tk.CENTER)
-        
-        # Vertical Scrollbar integration for Treeview 
-        scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.history_tree.yview)
-        self.history_tree.configure(yscrollcommand=scrollbar.set)
+        # ==================================
+        # TIPO EVALUACIÓN
+        # ==================================
+        ttk.Label(
+            main_container,
+            text="Tipo de Evaluación:"
+        ).pack(anchor=tk.W)
 
+        self.evaluation_type_combo = ttk.Combobox(
+            main_container,
+            state="readonly",
+            values=[
+                "Calidad",
+                "Operativa",
+                "Productividad",
+                "Habilidades Blandas",
+            ]
+        )
+
+        self.evaluation_type_combo.pack(
+            fill=tk.X,
+            pady=(5, 20)
+        )
+
+        # ==================================
+        # PROCESS FRAME
+        # ==================================
+        process_frame = ttk.Frame(
+            main_container
+        )
+
+        process_frame.pack(
+            fill=tk.X,
+            pady=(0, 20)
+        )
+
+        # ==================================
+        # PROGRESS BAR
+        # ==================================
+        self.progress_bar = ttk.Progressbar(
+            process_frame,
+            mode="determinate"
+        )
+
+        self.progress_bar.pack(
+            fill=tk.X,
+            pady=(0, 20)
+        )
+
+        # ==================================
+        # BOTÓN CARGAR
+        # ==================================
+        self.btn_upload = ttk.Button(
+            process_frame,
+            text="Procesar y Cargar a Supabase",
+            state="disabled",
+            command=self.process_and_upload
+        )
+
+        self.btn_upload.pack(
+            anchor=tk.E,
+            ipady=4,
+            ipadx=10
+        )
+
+        # ==================================
+        # TABLA HISTORIAL
+        # ==================================
+        table_frame = ttk.LabelFrame(
+            main_container,
+            text=" Historial de Archivos Procesados ",
+            padding="10"
+        )
+
+        table_frame.pack(
+            fill=tk.BOTH,
+            expand=True,
+            pady=(5, 0)
+        )
+
+        columns = (
+            "file_name",
+            "evaluation_type",
+            "upload_date",
+            "status"
+        )
+
+        self.history_tree = ttk.Treeview(
+            table_frame,
+            columns=columns,
+            show="headings",
+            height=8
+        )
+
+        self.history_tree.pack(
+            side=tk.LEFT,
+            fill=tk.BOTH,
+            expand=True
+        )
+
+        # ==================================
+        # HEADERS
+        # ==================================
+        self.history_tree.heading(
+            "file_name",
+            text="Archivo"
+        )
+
+        self.history_tree.heading(
+            "evaluation_type",
+            text="Tipo Evaluación"
+        )
+
+        self.history_tree.heading(
+            "upload_date",
+            text="Fecha Carga"
+        )
+
+        self.history_tree.heading(
+            "status",
+            text="Estado"
+        )
+
+        # ==================================
+        # COLUMNAS
+        # ==================================
+        self.history_tree.column(
+            "file_name",
+            width=260,
+            anchor=tk.W
+        )
+
+        self.history_tree.column(
+            "evaluation_type",
+            width=180,
+            anchor=tk.CENTER
+        )
+
+        self.history_tree.column(
+            "upload_date",
+            width=180,
+            anchor=tk.CENTER
+        )
+
+        self.history_tree.column(
+            "status",
+            width=120,
+            anchor=tk.CENTER
+        )
+
+        # ==================================
+        # SCROLLBAR
+        # ==================================
+        scrollbar = ttk.Scrollbar(
+            table_frame,
+            orient=tk.VERTICAL,
+            command=self.history_tree.yview
+        )
+
+        self.history_tree.configure(
+            yscrollcommand=scrollbar.set
+        )
+
+        scrollbar.pack(
+            side=tk.RIGHT,
+            fill=tk.Y
+        )
+
+    # ==================================
+    # BUSCAR ARCHIVO
+    # ==================================
     def browse_file(self):
-        """Opens a file dialog to select the evaluation dataset."""
-        file_types = [("Excel Files", "*.xlsx")]
+
+        file_types = [
+            ("Excel Files", "*.xlsx")
+        ]
+
         file_selected = filedialog.askopenfilename(
-            title="Seleccionar Dataset de Evaluaciones", 
+            title="Seleccionar Dataset",
             filetypes=file_types
         )
-        
-        if file_selected:
-            self.selected_file_path.set(file_selected)
-            self.btn_upload.config(state="normal") # Enable action button
-            
-    def process_and_upload_mock(self):
-        """Simulates the backend data conversion and cloud storage transmission."""
-        full_path = self.selected_file_path.get()
-        # Extract only the file name from the full system path
-        file_name = os.path.basename(full_path)
-        
-        # Lock buttons to prevent multiple concurrent execution flows
-        self.btn_browse.config(state="disabled")
-        self.btn_upload.config(state="disabled")
-        
-        # Reset and animate the progress bar UI
-        self.progress_bar['value'] = 0
-        self.update_idletasks()
-        
-        # Loop steps to simulate calculations across 20 attributes
-        for i in range(1, 6):
-            time.sleep(0.3)  # Simulates processing chunk execution
-            self.progress_bar['value'] = i * 20
-            self.update_idletasks()
-        
-        # Get exact real-time system date and time for tracking purposes
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        # Insert the metadata dynamically into the first position of the Treeview
-        self.history_tree.insert("", 0, values=(file_name, current_time, "Éxito (Supabase)"))
 
-        # UI success notification showing structured results
-        messagebox.showinfo(
-            "Proceso ETL Exitoso",
-            "¡Ingesta de datos finalizada con éxito!\n\n"
-            "- Archivo analizado: 'evaluacion_desempeño_finsupport.xlsx'\n"
-            "- Parámetros evaluados: 20 preguntas (Calidad, Operatividad, Blandas, Productividad)\n"
-            "- Registros procesados: 10 colaboradores (Empleados 2 - 11)\n"
-            "- Persistencia: Métricas calculadas y sincronizadas con PostgreSQL en la nube."
+        if file_selected:
+
+            self.selected_file_path.set(
+                file_selected
+            )
+
+            self.btn_upload.config(
+                state="normal"
+            )
+
+    # ==================================
+    # PROCESAR EXCEL
+    # ==================================
+    def process_and_upload(self):
+
+        full_path = self.selected_file_path.get()
+
+        evaluation_type = (
+            self.evaluation_type_combo.get()
         )
-        
-        # Reset view components to initial state
-        self.progress_bar['value'] = 0
-        self.selected_file_path.set("")
-        self.btn_browse.config(state="normal")
+
+        if not full_path:
+
+            messagebox.showwarning(
+                "Advertencia",
+                "Seleccione un archivo"
+            )
+
+            return
+
+        if not evaluation_type:
+
+            messagebox.showwarning(
+                "Advertencia",
+                "Seleccione un tipo de evaluación"
+            )
+
+            return
+
+        try:
+
+            # BLOQUEAR BOTONES
+            self.btn_upload.config(
+                state="disabled"
+            )
+
+            self.btn_browse.config(
+                state="disabled"
+            )
+
+            # BARRA PROGRESO
+            self.progress_bar['value'] = 20
+
+            self.update_idletasks()
+
+            # ==================================
+            # PROCESAR ETL
+            # ==================================
+            process_excel(
+                full_path,
+                evaluation_type
+            )
+
+            self.progress_bar['value'] = 100
+
+            # ==================================
+            # RECARGAR HISTORIAL
+            # ==================================
+            self.reload_history()
+
+            # ==================================
+            # MENSAJE
+            # ==================================
+            messagebox.showinfo(
+                "Éxito",
+                "Archivo procesado correctamente"
+            )
+
+        except Exception as e:
+
+            messagebox.showerror(
+                "Error",
+                str(e)
+            )
+
+        finally:
+
+            # RESET UI
+            self.progress_bar['value'] = 0
+
+            self.selected_file_path.set("")
+
+            self.evaluation_type_combo.set("")
+
+            self.btn_upload.config(
+                state="disabled"
+            )
+
+            self.btn_browse.config(
+                state="normal"
+            )
+
+    # ==================================
+    # CARGAR HISTORIAL
+    # ==================================
+    def load_history(self):
+
+        conn = get_connection()
+
+        cursor = conn.cursor()
+
+        try:
+
+            cursor.execute("""
+                SELECT
+                    nombre_archivo,
+                    tipo_evaluacion,
+                    fecha_carga,
+                    estado
+                FROM historial_cargas
+                ORDER BY fecha_carga DESC
+            """)
+
+            rows = cursor.fetchall()
+
+            for row in rows:
+
+                self.history_tree.insert(
+                    "",
+                    tk.END,
+                    values=row
+                )
+
+        except Exception as e:
+
+            print(
+                "Error cargando historial:",
+                e
+            )
+
+        finally:
+
+            cursor.close()
+
+            conn.close()
+
+    # ==================================
+    # RECARGAR TREEVIEW
+    # ==================================
+    def reload_history(self):
+
+        # LIMPIAR TABLA
+        for item in self.history_tree.get_children():
+
+            self.history_tree.delete(item)
+
+        # VOLVER A CARGAR
+        self.load_history()
+

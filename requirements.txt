@@ -1,0 +1,12 @@
+tkinter
+ttk
+filedialog
+messagebox
+os
+time
+datetime
+pandas
+openpyxl
+xlsxwriter
+psycopg2
+sqlalchemy

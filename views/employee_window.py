@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from models.employee import Employee
-import database.queries as queries
+import services.employee_service as employee_service
 from utils.helpers import validar_correo, validar_telefono
 from datetime import datetime
 
@@ -130,7 +130,7 @@ class EmployeeView(ttk.Frame):
         self.cargar_tabla()
 
     def cargar_combobox_areas(self):
-        areas = queries.obtener_areas()
+        areas = employee_service.obtener_areas()
         self.dict_areas = {a[1]: a[0] for a in areas}
         self.combo_area['values'] = list(self.dict_areas.keys())
         if self.combo_area['values']:
@@ -141,7 +141,7 @@ class EmployeeView(ttk.Frame):
             self.tree.delete(item)
             
         if lista_empleados is None:
-            lista_empleados = queries.obtener_empleados()
+            lista_empleados = employee_service.obtener_empleados()
             
         for emp in lista_empleados:
             self.tree.insert("", "end", values=(
@@ -240,13 +240,13 @@ class EmployeeView(ttk.Frame):
         if not emp:
             return
             
-        empleados_existentes = queries.obtener_empleados()
+        empleados_existentes = employee_service.obtener_empleados()
         codigos = [e[0] for e in empleados_existentes]
         if emp.codigo in codigos:
             messagebox.showerror("Error", "Este código ya existe.")
             return
             
-        exito = queries.crear_empleado(emp)
+        exito = employee_service.crear_empleado(emp)
         if exito:
             messagebox.showinfo("Éxito", "¡Empleado registrado con éxito!")
             self.limpiar_formulario()
@@ -265,7 +265,7 @@ class EmployeeView(ttk.Frame):
             messagebox.showwarning("Atención", "Escriba un término de búsqueda.")
             return
             
-        resultados = queries.buscar_empleados(criterio)
+        resultados = employee_service.buscar_empleados(criterio)
         self.cargar_tabla(resultados)
         if not resultados:
             messagebox.showinfo("Búsqueda", "No se encontró ningún empleado.")
@@ -275,7 +275,7 @@ class EmployeeView(ttk.Frame):
         if not emp:
             return
             
-        exito = queries.actualizar_empleado(emp)
+        exito = employee_service.actualizar_empleado(emp)
         if exito:
             messagebox.showinfo("Éxito", "¡Datos modificados con éxito!")
             self.limpiar_formulario()
@@ -291,7 +291,7 @@ class EmployeeView(ttk.Frame):
             
         confirmar = messagebox.askyesno("Confirmar", f"¿Seguro que quieres eliminar al empleado con código '{codigo}'?")
         if confirmar:
-            exito = queries.eliminar_empleado(codigo)
+            exito = employee_service.eliminar_empleado(codigo)
             if exito:
                 messagebox.showinfo("Éxito", "¡Empleado eliminado!")
                 self.limpiar_formulario()
