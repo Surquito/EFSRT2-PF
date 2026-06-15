@@ -4,7 +4,7 @@ from PIL import Image, ImageTk
 import os
 from views.employee_window import EmployeeView
 from views.upload_window import EvaluationUploadView
-from views.evaluation_window import EvaluationPerformance
+from views.evaluation_window import EvaluationPerformanceView
 from views.reports_window import ReportsView
 
 class MainWindow:
@@ -66,6 +66,6 @@ class MainWindow:
 
         notebook.add(EmployeeView(notebook), text="Empleados")
         notebook.add(EvaluationUploadView(notebook), text="Carga de Evaluaciones")
-        notebook.add(EvaluationPerformance(notebook), text="Evaluación de Desempeño")
+        notebook.add(EvaluationPerformanceView(notebook), text="Evaluación de Desempeño")
         notebook.add(ReportsView(notebook), text="Reportes")
         notebook.select(tab_home)
