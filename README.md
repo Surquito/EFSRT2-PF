@@ -90,11 +90,11 @@ El sistema está diseñado considerando métricas clave en call centers financie
 
 ## Beneficios del Sistema
 
-- ✔ Automatización de evaluaciones de desempeño  
-- ✔ Centralización de información  
-- ✔ Visualización clara mediante dashboards  
-- ✔ Soporte para toma de decisiones basada en datos  
-- ✔ Arquitectura escalable y mantenible  
+- Automatización de evaluaciones de desempeño  
+- Centralización de información  
+- Visualización clara mediante dashboards  
+- Soporte para toma de decisiones basada en datos  
+- Arquitectura escalable y mantenible  
 
 ---
 
