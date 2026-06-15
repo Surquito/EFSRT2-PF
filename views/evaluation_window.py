@@ -3,7 +3,7 @@ from tkinter import ttk
 from tkinter import messagebox
 from services.evaluation_service import EvaluationService
 
-class EvaluationPerformance(ttk.Frame):
+class EvaluationPerformanceView(ttk.Frame):
 
     def __init__(self, parent):
         super().__init__(parent)
